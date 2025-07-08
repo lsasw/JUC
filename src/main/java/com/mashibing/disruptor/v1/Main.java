@@ -6,40 +6,53 @@ import com.lmax.disruptor.dsl.Disruptor;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-
+// 测试类 测试Disruptor 的使用 disruptor 是一个事件驱动框架
 public class Main {
     public static void main(String[] args) {
-        //Executor executor = Executors.newCachedThreadPool();
+    // Executor executor = Executors.newCachedThreadPool();
 
-        LongEventFactory factory = new LongEventFactory();
+    // 创建一个LongEvent对象的工厂
+    LongEventFactory factory = new LongEventFactory();
 
-        //must be power of 2
-        int ringBufferSize = 1024;
+    // 必须是2的幂次方，以优化性能
+    int ringBufferSize = 1024;
 
-        Disruptor<LongEvent> disruptor = new Disruptor<LongEvent>(factory, ringBufferSize, Executors.defaultThreadFactory());
+    // 初始化Disruptor实例，使用默认线程工厂
+    Disruptor<LongEvent> disruptor = new Disruptor<LongEvent>(factory, ringBufferSize, Executors.defaultThreadFactory());
 
-        disruptor.handleEventsWith(new LongEventHandler());
+    // 设置事件处理器
+    disruptor.handleEventsWith(new LongEventHandler());
 
-        disruptor.start();
+    // 启动Disruptor
+    disruptor.start();
 
-        RingBuffer<LongEvent> ringBuffer = disruptor.getRingBuffer();
+    // 获取RingBuffer实例
+    RingBuffer<LongEvent> ringBuffer = disruptor.getRingBuffer();
 
-        LongEventProducer producer = new LongEventProducer(ringBuffer);
+    // 创建生产者实例
+    LongEventProducer producer = new LongEventProducer(disruptor.getRingBuffer());
 
-        ByteBuffer bb = ByteBuffer.allocate(8);
+    // 创建一个ByteBuffer，用于写入数据
+    ByteBuffer bb = ByteBuffer.allocate(8);
 
-        for(long l = 0; l<100; l++) {
-            bb.putLong(0, l);
+    // 循环写入数据到RingBuffer中
+    for(long l = 0; l<100; l++) {
+        // 将数据写入ByteBuffer
+        bb.putLong(0, l);
 
-            producer.onData(bb);
+        // 使用生产者将数据写入RingBuffer
+        producer.onData(bb);
 
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        try {
+            // 模拟数据生产速度，每写入一个数据后暂停100毫秒
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
-
-        disruptor.shutdown();
     }
+
+    // 关闭Disruptor
+    disruptor.shutdown();
+}
+
 }
